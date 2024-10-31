@@ -21,23 +21,23 @@
             </div>
         </div>
 
-        <div id="warmup" class="bg-white rounded-lg shadow p-4 mb-4">
+        <div id="warmup" class="bg-white rounded-lg shadow p-4 mb-4 exercise-card">
             <h2 class="font-bold mb-2">Warm-up (7 minutes)</h2>
-            <div class="text-sm mb-4">
+            <div class="text-sm mb-4 set-data">
                 <label class="block mb-2">
-                    <input type="checkbox" class="mr-2">
+                    <input type="checkbox" class="mr-2" data-type="completed">
                     Cardio (3 min)
                 </label>
                 <label class="block mb-2">
-                    <input type="checkbox" class="mr-2">
+                    <input type="checkbox" class="mr-2" data-type="completed">
                     Cat-Cow (10 reps)
                 </label>
                 <label class="block mb-2">
-                    <input type="checkbox" class="mr-2">
+                    <input type="checkbox" class="mr-2" data-type="completed">
                     Arm Circles (10 each)
                 </label>
                 <label class="block">
-                    <input type="checkbox" class="mr-2">
+                    <input type="checkbox" class="mr-2" data-type="completed">
                     Band Pull-Aparts (15 reps)
                 </label>
             </div>
@@ -45,31 +45,29 @@
 
         <div id="exerciseContainer"></div>
 
-        <div id="cooldown" class="bg-white rounded-lg shadow p-4 mb-4">
+        <div id="cooldown" class="bg-white rounded-lg shadow p-4 mb-4 exercise-card">
             <h2 class="font-bold mb-2">Cool-down (3 minutes)</h2>
-            <div class="text-sm">
+            <div class="text-sm set-data">
                 <label class="block mb-2">
-                    <input type="checkbox" class="mr-2">
+                    <input type="checkbox" class="mr-2" data-type="completed">
                     Stretching (2 min)
                 </label>
                 <label class="block">
-                    <input type="checkbox" class="mr-2">
+                    <input type="checkbox" class="mr-2" data-type="completed">
                     Thoracic Extensions (10 reps)
                 </label>
             </div>
         </div>
 
-        <button id="saveButton" class="w-full bg-blue-600 text-white py-2 px-4 rounded mb-4">
+        <button id="saveButton" onclick="saveWorkout()" class="w-full bg-blue-600 text-white py-2 px-4 rounded mb-4">
             Save Workout
         </button>
-
-        <div id="history" class="bg-white rounded-lg shadow p-4">
-            <h2 class="font-bold mb-2">Previous Workouts</h2>
-            <div id="historyList" class="text-sm"></div>
-        </div>
     </div>
 
     <script>
+        // Replace this with your Google Apps Script URL
+        const GOOGLE_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwuDpKwffOs6X-vN_PbLb4hDB7DU0-uDl9eWwd1fBPswz6W4NXmzUPo4A7CCI4BICIg/exec';
+
         const routineA = [
             {
                 name: 'Goblet Squats',
@@ -145,7 +143,7 @@
 
         function createExerciseCard(exercise) {
             const card = document.createElement('div');
-            card.className = 'bg-white rounded-lg shadow p-4 mb-4';
+            card.className = 'bg-white rounded-lg shadow p-4 mb-4 exercise-card';
             
             const header = document.createElement('div');
             header.className = 'mb-4';
@@ -161,15 +159,15 @@
             if (!exercise.exercises) {
                 for (let i = 0; i < exercise.sets; i++) {
                     const setDiv = document.createElement('div');
-                    setDiv.className = 'flex space-x-2';
+                    setDiv.className = 'flex space-x-2 set-data';
                     setDiv.innerHTML = `
                         <div class="flex-1">
                             <label class="block text-sm mb-1">Set ${i + 1}</label>
-                            <input type="number" placeholder="Weight" class="w-full p-2 border rounded" data-set="${i + 1}" data-type="weight">
+                            <input type="number" placeholder="Weight" class="w-full p-2 border rounded" data-type="weight">
                         </div>
                         <div class="flex-1">
                             <label class="block text-sm mb-1">Reps</label>
-                            <input type="number" placeholder="Reps" class="w-full p-2 border rounded" data-set="${i + 1}" data-type="reps">
+                            <input type="number" placeholder="Reps" class="w-full p-2 border rounded" data-type="reps">
                         </div>
                     `;
                     setsContainer.appendChild(setDiv);
@@ -177,10 +175,10 @@
             } else {
                 exercise.exercises.forEach((subExercise, index) => {
                     const subExDiv = document.createElement('div');
-                    subExDiv.className = 'mb-4';
+                    subExDiv.className = 'mb-4 set-data';
                     subExDiv.innerHTML = `
                         <p class="text-sm font-medium mb-2">${subExercise}</p>
-                        <input type="text" placeholder="Completed" class="w-full p-2 border rounded">
+                        <input type="text" placeholder="Completed" class="w-full p-2 border rounded" data-type="completed">
                     `;
                     setsContainer.appendChild(subExDiv);
                 });
@@ -189,6 +187,54 @@
             card.appendChild(header);
             card.appendChild(setsContainer);
             return card;
+        }
+
+        async function saveWorkout() {
+            const date = document.getElementById('workoutDate').value;
+            const routine = document.getElementById('routineSelect').value;
+            const exerciseData = [];
+
+            // Collect data from all exercise cards
+            document.querySelectorAll('.exercise-card').forEach(card => {
+                const exerciseName = card.querySelector('h2').textContent;
+                const sets = card.querySelectorAll('.set-data');
+                
+                sets.forEach((set, index) => {
+                    const weight = set.querySelector('[data-type="weight"]')?.value;
+                    const reps = set.querySelector('[data-type="reps"]')?.value;
+                    const completed = set.querySelector('[data-type="completed"]')?.value;
+                    
+                    if (weight || reps || completed) {
+                        exerciseData.push({
+                            date,
+                            routine,
+                            exercise: exerciseName,
+                            set: index + 1,
+                            weight: weight || '',
+                            reps: reps || '',
+                            completed: completed || ''
+                        });
+                    }
+                });
+            });
+
+            try {
+                const response = await fetch(GOOGLE_SCRIPT_URL, {
+                    method: 'POST',
+                    mode: 'no-cors',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        data: exerciseData
+                    })
+                });
+
+                alert('Workout saved successfully!');
+            } catch (error) {
+                alert('Error saving workout. Please try again.');
+                console.error('Error:', error);
+            }
         }
 
         function updateExercises() {
@@ -201,46 +247,11 @@
             });
         }
 
-        function saveWorkout() {
-            const date = document.getElementById('workoutDate').value;
-            const routine = document.getElementById('routineSelect').value;
-            
-            const workout = {
-                date,
-                routine,
-                timestamp: new Date().getTime()
-            };
-            
-            const savedWorkouts = JSON.parse(localStorage.getItem('workouts') || '[]');
-            savedWorkouts.push(workout);
-            localStorage.setItem('workouts', JSON.stringify(savedWorkouts));
-            
-            updateHistory();
-            alert('Workout saved!');
-        }
-
-        function updateHistory() {
-            const historyList = document.getElementById('historyList');
-            const savedWorkouts = JSON.parse(localStorage.getItem('workouts') || '[]');
-            
-            historyList.innerHTML = savedWorkouts
-                .sort((a, b) => b.timestamp - a.timestamp)
-                .slice(0, 5)
-                .map(workout => `
-                    <div class="mb-2 pb-2 border-b">
-                        ${workout.date} - Routine ${workout.routine}
-                    </div>
-                `)
-                .join('');
-        }
-
         // Initialize
         document.getElementById('workoutDate').valueAsDate = new Date();
         document.getElementById('routineSelect').addEventListener('change', updateExercises);
-        document.getElementById('saveButton').addEventListener('click', saveWorkout);
         
         updateExercises();
-        updateHistory();
     </script>
 </body>
 </html>
